@@ -1,0 +1,33 @@
+name: TrueVoteApi
+
+volumes:
+  sql-server-data:
+    driver: local
+  sqldata:
+  sqllog:
+  sqlbackup:
+
+services:
+  truevote:
+    image: ${DOCKER_REGISTRY-}truevote
+    container_name: api
+    build:
+      context: .
+      dockerfile: TrueVote/Dockerfile
+    depends_on:
+      - database
+
+  database:
+    image: mcr.microsoft.com/mssql/server
+    container_name: database
+    env_file:
+      - TrueVote/sqlserver.env
+    restart: always
+    volumes:
+      - sql-server-data:/var/opt/mssql/
+      - sqldata:/var/opt/sqlserver/data
+      - sqllog:/var/opt/sqlserver/log
+      - sqlbackup:/var/opt/sqlserver/backup
+      - /c/docker/shared:/usr/shared
+    ports:
+      - '1433:1433'
