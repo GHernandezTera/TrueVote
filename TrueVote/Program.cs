@@ -1,9 +1,7 @@
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using TrueVote.Database;
-using Hangfire;
-using Hangfire.SqlServer;
-using Microsoft.Extensions.Configuration;
+using TrueVote.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,12 +32,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); 
+var cacheMaxAgeOneWeek = (60 * 60 * 24 * 7).ToString();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append(
+             "Cache-Control", $"public, max-age={cacheMaxAgeOneWeek}");
+    }
+});
 
 app.UseAuthorization();
 
 app.UseHangfireDashboard();
-BackgroundJob.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
+
+Scheduler.Init();
 
 app.MapControllers();
 
