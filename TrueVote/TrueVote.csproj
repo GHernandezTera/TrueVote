@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.14" />
     <PackageReference Include="Hangfire.Core" Version="1.8.14" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.14" />
@@ -25,6 +26,10 @@
 
   <ItemGroup>
     <Folder Include="Entities\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\data\RESULTADOS_2024_CSV_V2.csv" />
   </ItemGroup>
 
 </Project>
