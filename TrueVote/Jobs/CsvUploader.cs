@@ -1,64 +1,27 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using Hangfire;
 using System.Globalization;
+using TrueVote.Entities;
 using TrueVote.Utilities;
 
 namespace TrueVote.Jobs
 {
-    public class CsvUploader<T>(string filePath = @"~/data/RESULTADOS_2024_CSV_V2.csv")
+    public class CsvUploader<T>
     {
-        public int Page { get; private set; } = 0;
-        public int PageSize { get; set; } = 1000;
-        public bool Ready { get; private set; } = false;
+        public int Page { get; private set; }
+        public int PageSize { get; set; }
+        public bool Ready { get; private set; }
 
-        private IEnumerator<T> records;
+        private IEnumerator<T>? records;
 
-        public string FilePath { get; } = filePath;
+        public string FilePath { get; set; }
 
-        public bool Prepare()
+        public CsvUploader(string? filePath = null, int page = 0, int pageSize = 1000)
         {
-            Page = 0;
-            try
-            {
-                if (File.Exists(FilePath))
-                {
-                    var config = new CsvConfiguration(CultureInfo.InvariantCulture);
-                    using (StreamReader streamReader = new StreamReader(filePath))
-                    using (CsvReader csvReader = new CsvReader(streamReader, config))
-                    {
-                        var enumerable = csvReader.GetRecords<T>();
-
-                        records = enumerable.GetEnumerator();
-
-                        ConsoleUtilities.Sucess("File ready to process!");
-
-                        Ready = true;
-                    }
-                }
-            }
-            catch (FileNotFoundException fnfEx)
-            {
-                ConsoleUtilities.Error("The file couldn´t be found!", fnfEx);
-            }
-            catch (Exception ex)
-            {
-                ConsoleUtilities.Error("Something unexpected went wrong!", ex);
-            }
-            return Ready;
+            FilePath = filePath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "RESULTADOS_2024_CSV_V2.csv");
+            Page = page;
+            PageSize = pageSize;
         }
-
-        public void Process()
-        {
-            if (!Ready)
-            {
-                ConsoleUtilities.Error("File is not ready!");
-                return;
-            }
-
-            for (int i = 0; i < PageSize && records.MoveNext(); i++)
-            {
-                T results = records.Current;
-            }
-        }
-    }                                                          
+    }
 }

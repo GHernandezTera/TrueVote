@@ -21,7 +21,7 @@ builder.Services.AddHangfireServer();
 
 
 builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).EnableSensitiveDataLogging());
 
 var app = builder.Build();
 
@@ -47,7 +47,9 @@ app.UseAuthorization();
 
 app.UseHangfireDashboard();
 
-Scheduler.Init();
+var scheduler = new Scheduler();
+
+scheduler.Init();
 
 app.MapControllers();
 
