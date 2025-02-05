@@ -1,4 +1,4 @@
-﻿namespace TrueVote.Entities
+﻿namespace TrueVote.Models
 {
     public class Candidate(string code, string name)
     {

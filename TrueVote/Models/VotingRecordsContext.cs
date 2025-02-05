@@ -1,7 +1,7 @@
 ﻿//using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace TrueVote.Entities
+namespace TrueVote.Models
 {
     public class VotingRecordsContext: DbContext
     {
@@ -10,6 +10,7 @@ namespace TrueVote.Entities
         public DbSet<Municipality> Municipalities { get; set; }
         public DbSet<State> States { get; set; }
         public DbSet<VotingRecord> VotingRecords { get; set; }
+        public DbSet<CsvProcessState> CsvProcessState { get; set; }
         public VotingRecordsContext(DbContextOptions<VotingRecordsContext> options)
             : base(options)
         {

@@ -35,8 +35,4 @@
     <None Include="wwwroot\data\RESULTADOS_2024_CSV_V2.csv" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
-
 </Project>

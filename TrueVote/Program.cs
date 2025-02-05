@@ -47,10 +47,6 @@ app.UseAuthorization();
 
 app.UseHangfireDashboard();
 
-var scheduler = new Scheduler();
-
-scheduler.Init();
-
 app.MapControllers();
 
 app.Run();

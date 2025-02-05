@@ -1,6 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
 
-namespace TrueVote.Entities
+namespace TrueVote.Models
 {
     public class VotingRecord
     {
