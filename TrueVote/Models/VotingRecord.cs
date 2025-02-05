@@ -7,13 +7,16 @@ namespace TrueVote.Models
         public int Id { get; set; }
         [Name("COD_EDO")]
         public int StateId { get; set; }
-        public virtual State State { get; set; }
+        [Name("EDO")]
+        public string State { get; set; }
         [Name("COD_MUN")]
         public int MunicipalityId { get; set; }
-        public virtual Municipality Municipality { get; set; }
+        [Name("MUN")]
+        public string Municipality { get; set; }
         [Name("COD_PAR")]
         public int ParishId { get; set; }
-        public virtual Parish Parish { get; set; }
+        [Name("PAR")]
+        public string Parish { get; set; }
         [Name("CENTRO")]
         public int VotingCenter { get; set; }
         [Name("MESA")]
