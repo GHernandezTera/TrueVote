@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TrueVote.Database;
 using TrueVote.Models;
 
@@ -28,6 +29,7 @@ namespace TrueVote.Services
                     .Distinct()
                     .Where(e => !dbStates.Contains(e.Id))
                     .ToList();
+
 
                 if (newStates.Any())
                 {
@@ -78,15 +80,15 @@ namespace TrueVote.Services
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex.Message, $"Error al actualizar la base de datos.");
+                _logger.LogError(ex.Message, $"Error updating the database.");
             }
             catch (IOException ex)
             {
-                _logger.LogError(ex.Message, $"Error de entrada/salida.");
+                _logger.LogError(ex.Message, $"IO error.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message, $"Ocurrió un error inesperado.");
+                _logger.LogError(ex.Message, $"Unexpected error ocurred.");
             }
         }
     }

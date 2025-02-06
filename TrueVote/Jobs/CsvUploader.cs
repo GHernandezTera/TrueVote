@@ -20,6 +20,7 @@ namespace TrueVote.Jobs
         {
             try
             {
+                ConsoleUtilities.Sucess($"#########   {filePath}   ##########");
                 var progress = await _context.CsvProcessState.FirstOrDefaultAsync();
                 var lastProcessedRow = progress?.LastProcessedRow ?? 0;
 

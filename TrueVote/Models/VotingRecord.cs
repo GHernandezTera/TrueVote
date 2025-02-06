@@ -4,6 +4,7 @@ namespace TrueVote.Models
 {
     public class VotingRecord
     {
+        [Ignore]
         public int Id { get; set; }
         [Name("COD_EDO")]
         public int StateId { get; set; }

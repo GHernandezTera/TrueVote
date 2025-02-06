@@ -2,56 +2,37 @@ using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Data.Common;
 using TrueVote.Database;
 using TrueVote.Jobs;
 using TrueVote.Models;
 using TrueVote.Services;
+using TrueVote.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://0.0.0.0:80");
+//builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 // Add services to the container.
 ConfigureServices(builder.Services);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    // Migrate database
+    MigrateDatabase(app);
+
+    // Configure middleware
+    ConfigureMiddleware(app);
+
+    app.Run();
 }
-
-app.UseHttpsRedirection(); 
-var cacheMaxAgeOneWeek = (60 * 60 * 24 * 7).ToString();
-app.UseStaticFiles(new StaticFileOptions
+catch (Exception ex)
 {
-    OnPrepareResponse = ctx =>
-    {
-        ctx.Context.Response.Headers.Append(
-             "Cache-Control", $"public, max-age={cacheMaxAgeOneWeek}");
-    }
-});
-
-app.UseAuthorization();
-
-app.UseHangfireDashboard();
-
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var csvUploader = services.GetRequiredService<CsvUploader>();
-
-    RecurringJob.AddOrUpdate(
-        "csv-processing", 
-        () => csvUploader.processFile(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "RESULTADOS_2024_CSV_V2.csv")),
-        Cron.Minutely()
-    );
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "An error occurred while starting the application.");
+    throw;
 }
-
-app.MapControllers();
-
-app.Run();
 
 void ConfigureServices(IServiceCollection services)
 {
@@ -100,6 +81,7 @@ void ConfigureServices(IServiceCollection services)
 
     services.AddTransient<CsvService>();
     services.AddTransient<DbService>();
+    services.AddTransient<RoleService>();
     services.AddScoped<CsvUploader>();
 
 
@@ -110,4 +92,104 @@ void ConfigureServices(IServiceCollection services)
                     .UseRecommendedSerializerSettings()
                     .UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
     services.AddHangfireServer();
+}
+
+void MigrateDatabase(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        var context = services.GetRequiredService<VotingRecordsContext>();
+
+        context.Database.Migrate();
+        //CreateStoredProcedures(context.Database.GetDbConnection(), app.Logger);
+
+        // Create roles and administrator user
+        var roleService = services.GetRequiredService<RoleService>();
+        roleService.CreateRolesAsync().Wait();
+        roleService.CreateAdminUserAsync().Wait();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "An error occurred while migrating the database.");
+        throw;
+    }
+}
+
+void CreateStoredProcedures(DbConnection connection, ILogger logger)
+{
+    try
+    {
+        var scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "Scripts", "StoredProcedures", "procedures.sql");
+        var sqlScript = File.ReadAllText(scriptPath);
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = sqlScript;
+            connection.Open();
+            command.ExecuteNonQuery();
+            connection.Close();
+        }
+
+        logger.LogInformation("Stored procedure created/updated successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while creating/updating the stored procedure.");
+        throw;
+    }
+}
+
+void ConfigureMiddleware(WebApplication app)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+        var cacheMaxAgeOneWeek = (60 * 60 * 24 * 7).ToString();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = ctx =>
+            {
+                ctx.Context.Response.Headers.Append(
+                     "Cache-Control", $"public, max-age={cacheMaxAgeOneWeek}");
+            }
+        });
+
+        app.UseHangfireDashboard("/hangfire", new DashboardOptions
+        {
+            Authorization = [new AllowAllAuthorizationFilter()]
+        });
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var csvUploader = services.GetRequiredService<CsvUploader>();
+
+            RecurringJob.AddOrUpdate(
+                "csv-processing",
+                () => csvUploader.processFile(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "data", "RESULTADOS_2024_CSV_V2-short.csv")),
+                Cron.Minutely()
+            );
+        }
+
+        //app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while configuring middleware.");
+        throw;
+    }
 }
