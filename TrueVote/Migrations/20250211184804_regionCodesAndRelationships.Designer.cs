@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TrueVote.Database;
 
@@ -11,9 +12,11 @@ using TrueVote.Database;
 namespace TrueVote.Migrations
 {
     [DbContext(typeof(VotingRecordsContext))]
-    partial class VotingRecordsContextModelSnapshot : ModelSnapshot
+    [Migration("20250211184804_regionCodesAndRelationships")]
+    partial class regionCodesAndRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

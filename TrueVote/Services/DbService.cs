@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using TrueVote.Database;
 using TrueVote.Models;
 
@@ -21,74 +22,79 @@ namespace TrueVote.Services
         {
             try
             {
-                var dbStates = new HashSet<int>(await _context.States
-                    .Select(e => e.Id)
-                    .ToListAsync());
+                _logger.LogInformation($"###### Saving {data.Count} records to the database.");
+
+                var dbStates = new HashSet<int>(_context.States
+                    .AsNoTracking()
+                    .Select(e => e.Code)
+                    .ToList());
                 var newStates = data
-                    .Select(r => new State { Id = r.StateId, Name = r.State })
+                    .Where(d => d.State != null)
+                    .Select(d => d.State!)
                     .Distinct()
-                    .Where(e => !dbStates.Contains(e.Id))
+                    .Where(s => !dbStates.Contains(s.Code))
                     .ToList();
 
+                var dbMunicipalities = new HashSet<int>(_context.Municipalities
+                    .AsNoTracking()
+                    .Select(m => m.Code)
+                    .ToList());
+                var newMunicipalities = data
+                    .Where(d => d.Municipality != null)
+                    .Select(d => d.Municipality!)
+                    .Distinct()
+                    .Where(m => !dbMunicipalities.Contains(m.Code))
+                    .ToList();
+
+                var dbParishes = new HashSet<int>(await _context.Parishes
+                    .AsNoTracking()
+                    .Select(p => p.Code)
+                    .ToListAsync());
+                var newParishes = data
+                    .Where(d => d.Parish != null)
+                    .Select(d => d.Parish!)
+                    .Distinct()
+                    .Where(p => !dbParishes.Contains(p.Code))
+                    .ToList();
 
                 if (newStates.Any())
                 {
                     _context.States.AddRange(newStates);
-                    await _context.SaveChangesAsync();
                 }
-
-                var dbMunicipalities = new HashSet<int>(await _context.Municipalities
-                    .Select(m => m.Id)
-                    .ToListAsync());
-                var newMunicipalities = data
-                    .Select(d => new Municipality { Name = d.Municipality, Id = d.MunicipalityId, StateId = d.StateId })
-                    .Distinct()
-                    .Where(m => !dbMunicipalities.Contains(m.Id))
-                    .ToList();
 
                 if (newMunicipalities.Any())
                 {
                     _context.Municipalities.AddRange(newMunicipalities);
-                    await _context.SaveChangesAsync();
                 }
-
-                var updatedMunicipalities = _context.Municipalities.Select(m => new Municipality
-                {
-                    Id = m.Id,
-                    Name = m.Name,
-                    StateId = m.StateId
-                }).ToList();
-
-                var dbParishes = new HashSet<int>(await _context.Parishes
-                    .Select(p => p.Id)
-                    .ToListAsync());
-                var newParishes = data.Select(d => new Parish
-                {
-                    Name = d.Parish,
-                    Id = d.ParishId,
-                    MunicipalityId = d.MunicipalityId
-                }).Distinct().Where(p => !dbParishes.Contains(p.Id)).ToList();
 
                 if (newParishes.Any())
                 {
                     _context.Parishes.AddRange(newParishes);
-                    await _context.SaveChangesAsync();
                 }
+
+                data.ForEach(record =>
+                {
+                    record.State = null;
+                    record.Municipality = null;
+                    record.Parish = null;
+                });
 
                 _context.VotingRecords.AddRange(data);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"###### Saved {data.Count} records to the database.");
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex.Message, $"Error updating the database.");
+                _logger.LogError(ex, $"Error updating the database.");
             }
             catch (IOException ex)
             {
-                _logger.LogError(ex.Message, $"IO error.");
+                _logger.LogError(ex, $"IO error.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message, $"Unexpected error ocurred.");
+                _logger.LogError(ex, $"Unexpected error ocurred.");
             }
         }
     }
